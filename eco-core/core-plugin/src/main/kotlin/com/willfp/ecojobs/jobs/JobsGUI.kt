@@ -74,50 +74,55 @@ object JobsGUI {
                 )
             )
 
-            setSlot(
-                plugin.configYml.getInt("gui.player-info.row"),
-                plugin.configYml.getInt("gui.player-info.column"),
-                slot { player, _ ->
-                    @Suppress("DEPRECATION")
-                    val skullBuilder = SkullBuilder()
-                        .setDisplayName(
-                            plugin.configYml.getString("gui.player-info.name")
-                                .replace("%player%", player.displayName)
-                                .formatEco(player, true)
-                        )
+            val isPlayerInfoEnabled = plugin.configYml.getBoolOrNull("gui.player-info.enabled")
+                ?: true
 
-                    if (player.activeJobs.isEmpty()) {
-                        skullBuilder.addLoreLines(
-                            plugin.configYml.getStrings("gui.player-info.no-jobs")
-                                .formatEco(player, true)
-                        )
-                    } else {
-                        skullBuilder.addLoreLines(
-                            plugin.configYml.getStrings("gui.player-info.has-jobs")
-                                .flatMap {
-                                    if (it == "%jobs%") {
-                                        player.activeJobs.flatMap { job ->
-                                            job.injectPlaceholdersInto(
-                                                plugin.configYml.getStrings("gui.player-info.job-line"),
-                                                player
-                                            )
+            if(isPlayerInfoEnabled) {
+                setSlot(
+                    plugin.configYml.getInt("gui.player-info.row"),
+                    plugin.configYml.getInt("gui.player-info.column"),
+                    slot { player, _ ->
+                        @Suppress("DEPRECATION")
+                        val skullBuilder = SkullBuilder()
+                            .setDisplayName(
+                                plugin.configYml.getString("gui.player-info.name")
+                                    .replace("%player%", player.displayName)
+                                    .formatEco(player, true)
+                            )
+
+                        if (player.activeJobs.isEmpty()) {
+                            skullBuilder.addLoreLines(
+                                plugin.configYml.getStrings("gui.player-info.no-jobs")
+                                    .formatEco(player, true)
+                            )
+                        } else {
+                            skullBuilder.addLoreLines(
+                                plugin.configYml.getStrings("gui.player-info.has-jobs")
+                                    .flatMap {
+                                        if (it == "%jobs%") {
+                                            player.activeJobs.flatMap { job ->
+                                                job.injectPlaceholdersInto(
+                                                    plugin.configYml.getStrings("gui.player-info.job-line"),
+                                                    player
+                                                )
+                                            }
+                                        } else {
+                                            listOf(it)
                                         }
-                                    } else {
-                                        listOf(it)
                                     }
-                                }
-                                .formatEco(player, true)
-                        )
+                                    .formatEco(player, true)
+                            )
+                        }
+
+                        val skull = skullBuilder.build()
+
+                        val meta = skull.itemMeta as SkullMeta
+                        meta.owningPlayer = player
+                        skull.itemMeta = meta
+                        skull
                     }
-
-                    val skull = skullBuilder.build()
-
-                    val meta = skull.itemMeta as SkullMeta
-                    meta.owningPlayer = player
-                    skull.itemMeta = meta
-                    skull
-                }
-            )
+                )
+            }
 
             for ((index, pair) in jobAreaSlots.withIndex()) {
                 val (row, column) = pair
